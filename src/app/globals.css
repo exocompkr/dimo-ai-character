@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme {
+  /* === Brand color tokens (목업 _26_06_07 기준) === */
+  --color-ink: #3f3a38;
+  --color-ink-soft: #9a938f;
+  --color-line: #eeeae8;
+  --color-peach: #ffe5d8;
+  --color-peach-2: #ffd9c6;
+  --color-pink: #ffe3ec;
+  --color-accent: #ff8064;
+  --color-accent-deep: #f96a4d;
+  --color-bg-soft: #faf7f5;
+
+  /* === Radius === */
+  --radius-card: 16px;
+  --radius-chip: 18px;
+
+  /* === Shadow === */
+  --shadow-card: 0 4px 16px rgb(150 130 120 / 0.10);
+  --shadow-card-sm: 0 2px 8px rgb(150 130 120 / 0.07);
+
+  /* === Font === */
+  --font-sans:
+    "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR",
+    sans-serif;
+
+  /* === Container === */
+  --container-app: 1180px;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-white text-ink;
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    letter-spacing: -0.2px;
+  }
+  /* 이미지 기본 */
+  img {
+    display: block;
+    max-width: 100%;
+  }
+  /* 링크 기본 */
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  /* 폼 요소 기본 */
+  button {
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+  }
+}
+
+@layer components {
+  /* 본문 컨테이너 */
+  .app-wrap {
+    @apply mx-auto w-full px-[22px];
+    max-width: var(--container-app);
+  }
+
+  /* 섹션 헤더 (제목 + 더보기) */
+  .sec-head {
+    @apply mb-[18px] flex items-center justify-between;
+  }
+  .sec-head h2 {
+    @apply inline-flex items-center gap-[10px] text-[20px] font-bold;
+  }
+  .sec-head .more {
+    @apply text-[12.5px] text-ink-soft transition-colors hover:text-accent;
+  }
+
+  /* 1차 CTA 버튼 */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-[6px] rounded-[12px]
+           bg-accent px-6 py-[13px] text-sm font-bold text-white
+           transition-colors hover:bg-accent-deep;
+  }
+
+  /* 2차 outline 버튼 */
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-[6px] rounded-[12px]
+           border border-line bg-white px-5 py-[10px] text-sm font-bold text-ink
+           transition-colors hover:bg-bg-soft;
+  }
+
+  /* AI 칩 */
+  .ai-chip {
+    @apply rounded-[11px] px-[9px] py-[3px] text-[10px] font-bold text-white;
+    background: linear-gradient(120deg, #ff9f7d, #ff8064);
+  }
+}
+
+/* 스크롤바 숨김 유틸 */
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
