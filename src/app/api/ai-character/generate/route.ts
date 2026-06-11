@@ -3,6 +3,10 @@ import sharp from "sharp";
 import type { CharacterStyle } from "@/types/character-style";
 import characterStylesData from "@/data/character-styles.json";
 
+// Vercel 서버리스 함수 최대 실행 시간 (초). OpenAI 이미지 생성은 20~60s 소요.
+// Hobby 플랜 한도는 60s, Pro 플랜은 300s 까지 가능.
+export const maxDuration = 60;
+
 // JSON에서 스타일 데이터 로드
 const CHARACTER_STYLES: CharacterStyle[] = characterStylesData.styles;
 
