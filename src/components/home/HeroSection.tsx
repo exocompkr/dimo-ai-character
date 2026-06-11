@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
-import { UploadCloud } from "lucide-react";
+import { UploadCloud, Loader2 } from "lucide-react";
 import { MOCKUP_ASSETS } from "@/assets/mockup";
 import { cn } from "@/lib/cn";
+import { useAiCharacter } from "@/stores/aiCharacterStore";
 
 /**
  * Hero 섹션. 목업 v2 .hero-main 구조.
@@ -87,28 +89,43 @@ function GeneralBanner() {
 }
 
 function UploadCta() {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const setUploadedImage = useAiCharacter((s) => s.setUploadedImage);
 
-  const onPick = useCallback((f: File | null) => {
-    if (!f) return;
-    if (!f.type.startsWith("image/")) {
-      // eslint-disable-next-line no-alert
-      alert("JPG, PNG 파일만 업로드할 수 있어요.");
-      return;
-    }
-    setFile(f);
+  // 파일 선택 즉시 base64 변환 후 페이지 이동
+  const processAndNavigate = useCallback(
+    (f: File | null) => {
+      if (!f) return;
+      if (!f.type.startsWith("image/")) {
+        // eslint-disable-next-line no-alert
+        alert("JPG, PNG 파일만 업로드할 수 있어요.");
+        return;
+      }
+
+      setIsLoading(true);
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        setUploadedImage(base64);
+        router.push("/ai-character");
+      };
+      reader.onerror = () => {
+        setIsLoading(false);
+        // eslint-disable-next-line no-alert
+        alert("이미지를 읽는 중 오류가 발생했어요. 다시 시도해주세요.");
+      };
+      reader.readAsDataURL(f);
+    },
+    [router, setUploadedImage]
+  );
+
+  const openFilePicker = useCallback(() => {
+    inputRef.current?.click();
   }, []);
-
-  const onSubmit = useCallback(() => {
-    if (!file) {
-      inputRef.current?.click();
-      return;
-    }
-    // eslint-disable-next-line no-alert
-    alert(`AI 캐릭터 생성 페이지로 이동 (파일: ${file.name})`);
-  }, [file]);
 
   return (
     <div className="grid grid-cols-[1fr_auto] items-center gap-[18px] rounded-card border border-line bg-white p-5 shadow-[var(--shadow-card-sm)] max-[520px]:grid-cols-1">
@@ -124,10 +141,18 @@ function UploadCta() {
 
       <button
         type="button"
-        onClick={onSubmit}
-        className="btn-primary self-stretch whitespace-nowrap max-[520px]:justify-center"
+        onClick={openFilePicker}
+        disabled={isLoading}
+        className="btn-primary self-stretch whitespace-nowrap disabled:opacity-60 max-[520px]:justify-center"
       >
-        ✦ 바로 만들기
+        {isLoading ? (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            이동 중...
+          </>
+        ) : (
+          "✦ 바로 만들기"
+        )}
       </button>
 
       <div
@@ -135,13 +160,15 @@ function UploadCta() {
         tabIndex={0}
         className={cn(
           "col-span-full flex cursor-pointer flex-col items-center gap-1.5 rounded-[13px] border-2 border-dashed bg-bg-soft px-[14px] py-[22px] text-center transition-colors",
-          isDragOver
-            ? "border-accent bg-[#fff4ef]"
-            : "border-peach-2 hover:border-accent hover:bg-[#fff4ef]"
+          isLoading
+            ? "pointer-events-none opacity-60"
+            : isDragOver
+              ? "border-accent bg-[#fff4ef]"
+              : "border-peach-2 hover:border-accent hover:bg-[#fff4ef]"
         )}
-        onClick={() => inputRef.current?.click()}
+        onClick={openFilePicker}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+          if (e.key === "Enter" || e.key === " ") openFilePicker();
         }}
         onDragOver={(e) => {
           e.preventDefault();
@@ -151,12 +178,16 @@ function UploadCta() {
         onDrop={(e) => {
           e.preventDefault();
           setIsDragOver(false);
-          onPick(e.dataTransfer.files[0] ?? null);
+          processAndNavigate(e.dataTransfer.files[0] ?? null);
         }}
       >
-        <UploadCloud className="size-[34px] text-accent" aria-hidden />
+        {isLoading ? (
+          <Loader2 className="size-[34px] animate-spin text-accent" aria-hidden />
+        ) : (
+          <UploadCloud className="size-[34px] text-accent" aria-hidden />
+        )}
         <span className="text-[13.5px] font-bold text-[#6b5750]">
-          {file ? file.name : "사진을 드래그하거나 클릭하세요"}
+          {isLoading ? "이동 중..." : "사진을 드래그하거나 클릭하세요"}
         </span>
         <span className="text-[11px] text-ink-soft">JPG, PNG 지원</span>
         <input
@@ -164,7 +195,7 @@ function UploadCta() {
           type="file"
           accept="image/jpeg,image/png"
           className="hidden"
-          onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+          onChange={(e) => processAndNavigate(e.target.files?.[0] ?? null)}
         />
       </div>
     </div>

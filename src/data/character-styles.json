@@ -1,0 +1,11 @@
+{
+  "styles": [
+    {
+      "id": "cute-cartoon",
+      "name": "귀여운 만화",
+      "description": "동글동글 귀여운 만화 스타일",
+      "previewImage": "/images/styles/cute-sd.png",
+      "prompt": "The reference image style is the highest priority.\n\nCopy the exact illustration style of the reference image.\n\nJapanese SD mascot merchandise artwork.\nAcrylic stand illustration.\nSticker illustration.\n\nExtremely oversized head (80% of total height).\nTiny plush-like body.\nUltra short arms and legs.\nRound cheeks.\nSimple cute face.\nLarge simple anime eyes.\nTiny nose and mouth.\n\nSoft brown lineart.\nVariable line weight.\n\nLarge hair clumps.\nSimplified hair shapes.\nNo individual hair strands.\n\nUse cel shading only.\nUse flat color shadow shapes.\nUse hard-edged shadow planes.\nCreate depth using color blocks.\nNo gradients.\nNo airbrush shading.\nNo soft shading.\n\nPVC figure paint style.\n2D illustration with figure-like volume.\n\nSingle isolated character.\nTransparent background.\nCharacter only.\n\nNo floor.\nNo shadow.\nNo particles.\nNo decoration.\nNo props.\nNo scenery.\nNo text.\nNo watermark.\n\nNo realism.\nNo semi-realism.\nNo photorealism.\nNo Disney.\nNo Pixar.\nNo western cartoon.\nNo 3D render."
+    }
+  ]
+}
