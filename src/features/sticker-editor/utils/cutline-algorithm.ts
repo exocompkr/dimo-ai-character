@@ -17,6 +17,51 @@ interface Point {
 }
 
 /**
+ * 빠른 거리 변환 (Chamfer Distance Transform)
+ * O(width * height) - 2패스로 완료
+ *
+ * @param mask 불투명 픽셀 마스크 (1 = 불투명, 0 = 투명)
+ * @param width 이미지 너비
+ * @param height 이미지 높이
+ * @returns 각 픽셀에서 가장 가까운 불투명 픽셀까지의 거리
+ */
+function fastDistanceTransform(mask: Uint8Array, width: number, height: number): Float32Array {
+  const INF = width + height;
+  const dist = new Float32Array(width * height);
+
+  // 초기화: 불투명 픽셀은 0, 투명 픽셀은 무한대
+  for (let i = 0; i < width * height; i++) {
+    dist[i] = mask[i] ? 0 : INF;
+  }
+
+  // Forward pass (왼쪽 위 → 오른쪽 아래)
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = y * width + x;
+      if (x > 0) dist[i] = Math.min(dist[i], dist[i - 1] + 1);
+      if (y > 0) dist[i] = Math.min(dist[i], dist[(y - 1) * width + x] + 1);
+      // 대각선
+      if (x > 0 && y > 0) dist[i] = Math.min(dist[i], dist[(y - 1) * width + x - 1] + 1.4);
+      if (x < width - 1 && y > 0) dist[i] = Math.min(dist[i], dist[(y - 1) * width + x + 1] + 1.4);
+    }
+  }
+
+  // Backward pass (오른쪽 아래 → 왼쪽 위)
+  for (let y = height - 1; y >= 0; y--) {
+    for (let x = width - 1; x >= 0; x--) {
+      const i = y * width + x;
+      if (x < width - 1) dist[i] = Math.min(dist[i], dist[i + 1] + 1);
+      if (y < height - 1) dist[i] = Math.min(dist[i], dist[(y + 1) * width + x] + 1);
+      // 대각선
+      if (x < width - 1 && y < height - 1) dist[i] = Math.min(dist[i], dist[(y + 1) * width + x + 1] + 1.4);
+      if (x > 0 && y < height - 1) dist[i] = Math.min(dist[i], dist[(y + 1) * width + x - 1] + 1.4);
+    }
+  }
+
+  return dist;
+}
+
+/**
  * 모든 분리된 영역의 외곽선을 추출하고 연결합니다
  *
  * @param imageData 캔버스 이미지 데이터
@@ -26,33 +71,22 @@ interface Point {
 export function extractOuterContour(imageData: ImageData, dilateRadius: number = 15): Point[] {
   const { width, height, data } = imageData;
 
-  // 1. 불투명 픽셀 마스크 생성
-  const mask: boolean[][] = [];
-  for (let y = 0; y < height; y++) {
-    mask[y] = [];
-    for (let x = 0; x < width; x++) {
-      const index = (y * width + x) * 4;
-      mask[y][x] = data[index + 3] > 0;
-    }
+  // 1. 불투명 픽셀 마스크 생성 (1D 배열로 최적화)
+  const mask = new Uint8Array(width * height);
+  for (let i = 0; i < width * height; i++) {
+    mask[i] = data[i * 4 + 3] > 0 ? 1 : 0;
   }
 
-  // 2. 모폴로지 확장 (Dilation)
+  // 2. 거리 변환 (Distance Transform) - O(width * height)
+  // 각 픽셀에서 가장 가까운 불투명 픽셀까지의 거리 계산
+  const dist = fastDistanceTransform(mask, width, height);
+
+  // 3. 확장된 마스크 생성 (거리 <= dilateRadius인 픽셀)
   const dilated: boolean[][] = [];
   for (let y = 0; y < height; y++) {
     dilated[y] = [];
     for (let x = 0; x < width; x++) {
-      dilated[y][x] = false;
-      outer: for (let dy = -dilateRadius; dy <= dilateRadius; dy++) {
-        for (let dx = -dilateRadius; dx <= dilateRadius; dx++) {
-          if (dx * dx + dy * dy > dilateRadius * dilateRadius) continue;
-          const ny = y + dy;
-          const nx = x + dx;
-          if (ny >= 0 && ny < height && nx >= 0 && nx < width && mask[ny][nx]) {
-            dilated[y][x] = true;
-            break outer;
-          }
-        }
-      }
+      dilated[y][x] = dist[y * width + x] <= dilateRadius;
     }
   }
 
