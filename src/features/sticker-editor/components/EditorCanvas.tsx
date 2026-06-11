@@ -7,7 +7,7 @@ import { useStickerEditor } from "@/stores/stickerEditorStore";
 import type { EditorElement, ImageElement, ShapeElement, TextElement } from "../types/editor.types";
 import { SizeLabel } from "./SizeLabel";
 
-/** 캔버스 크기 (스크롤 없이 화면에 맞춤) */
+/** 캔버스 기본 크기 */
 const CANVAS_WIDTH = 480;
 const CANVAS_HEIGHT = 480;
 
@@ -26,9 +26,11 @@ interface LiveBounds {
 export function EditorCanvas() {
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [loadedImages, setLoadedImages] = useState<Map<string, HTMLImageElement>>(new Map());
   const [liveBounds, setLiveBounds] = useState<LiveBounds | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [scale, setScale] = useState(1);
 
   const {
     elements,
@@ -38,6 +40,22 @@ export function EditorCanvas() {
     updateElement,
     saveToHistory,
   } = useStickerEditor();
+
+  // 반응형 스케일 계산
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        // 모바일에서는 컨테이너 너비에 맞게 스케일 조정
+        const newScale = Math.min(containerWidth / CANVAS_WIDTH, 1);
+        setScale(newScale);
+      }
+    };
+
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, []);
 
   // 이미지 로드
   useEffect(() => {
@@ -193,11 +211,19 @@ export function EditorCanvas() {
       : null;
 
   return (
-    <div className="relative">
-      {/* 캔버스 */}
+    <div
+      ref={containerRef}
+      className="relative w-full max-w-[480px]"
+      style={{ height: CANVAS_HEIGHT * scale }}
+    >
+      {/* 캔버스 - 스케일 적용 */}
       <div
-        className="rounded-lg border-2 border-white bg-white shadow-lg"
-        style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
+        className="origin-top-left rounded-lg border-2 border-white bg-white shadow-lg"
+        style={{
+          width: CANVAS_WIDTH,
+          height: CANVAS_HEIGHT,
+          transform: `scale(${scale})`,
+        }}
       >
         <Stage
           ref={stageRef}
@@ -257,15 +283,15 @@ export function EditorCanvas() {
         </Stage>
       </div>
 
-      {/* 크기 라벨 (요소 하단에 표시, 캔버스 내 클램핑) */}
+      {/* 크기 라벨 (요소 하단에 표시, 캔버스 내 클램핑) - 스케일 적용 */}
       {selectedBounds && (
         <SizeLabel
-          x={selectedBounds.x + selectedBounds.width / 2}
-          y={selectedBounds.y + selectedBounds.height + 10}
+          x={(selectedBounds.x + selectedBounds.width / 2) * scale}
+          y={(selectedBounds.y + selectedBounds.height + 10) * scale}
           width={selectedBounds.width}
           height={selectedBounds.height}
-          canvasWidth={CANVAS_WIDTH}
-          canvasHeight={CANVAS_HEIGHT}
+          canvasWidth={CANVAS_WIDTH * scale}
+          canvasHeight={CANVAS_HEIGHT * scale}
         />
       )}
     </div>

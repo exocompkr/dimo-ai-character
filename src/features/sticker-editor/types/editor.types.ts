@@ -9,7 +9,71 @@ export type ElementType = "image" | "shape" | "text";
 export type ShapeType = "rect" | "circle" | "star" | "triangle";
 
 /** 편집기 단계 */
-export type EditorStep = "edit" | "cutline" | "complete";
+export type EditorStep = "edit" | "cutline" | "fabric" | "layout" | "order" | "complete";
+
+// ─────────────────────────────────────────────
+// 원단 설정 타입
+// ─────────────────────────────────────────────
+
+/** 용지 타입 ID */
+export type PaperTypeId = "white" | "transparent" | "fabric" | "transfer";
+
+/** 크기 옵션 ID */
+export type SizeOptionId = "a3" | "a4" | "mini" | "fabric" | "transfer";
+
+/** 용지 타입 정보 */
+export interface PaperType {
+  id: PaperTypeId;
+  name: string;
+  description: string;
+  detailDescription?: string;
+  imageUrl: string;
+  availableSizes: SizeOptionId[];
+}
+
+/** 크기 옵션 정보 */
+export interface SizeOption {
+  id: SizeOptionId;
+  name: string;
+  width: number;  // mm
+  height: number; // mm
+}
+
+/** 원단 설정 상태 */
+export interface FabricConfig {
+  selectedPaperType: PaperTypeId | null;
+  selectedSize: SizeOptionId | null;
+  quantity: number;
+}
+
+// ─────────────────────────────────────────────
+// 스티커 배치 타입
+// ─────────────────────────────────────────────
+
+/** 배치된 스티커 */
+export interface PlacedSticker {
+  id: string;
+  /** 아트보드 내 X 위치 (px) */
+  x: number;
+  /** 아트보드 내 Y 위치 (px) */
+  y: number;
+  /** 스케일 (1 = 100%) */
+  scale: number;
+  /** 회전 (도) */
+  rotation: number;
+}
+
+/** 레이아웃 설정 상태 */
+export interface LayoutConfig {
+  /** 배치된 스티커 목록 */
+  placedStickers: PlacedSticker[];
+  /** 선택된 스티커 ID */
+  selectedStickerId: string | null;
+  /** 스티커 원본 이미지 (칼선 포함 렌더링) */
+  stickerImage: string | null;
+  /** 스티커 원본 크기 (px) */
+  stickerSize: { width: number; height: number };
+}
 
 /** 편집 요소 공통 속성 */
 interface BaseElement {
@@ -130,6 +194,12 @@ export interface StickerEditorState {
   // 칼선
   cutline: CutlineConfig;
 
+  // 원단 설정
+  fabric: FabricConfig;
+
+  // 스티커 배치
+  layout: LayoutConfig;
+
   // 편집 단계
   step: EditorStep;
 
@@ -184,7 +254,24 @@ export interface StickerEditorActions {
   setStep: (step: EditorStep) => void;
   goToEdit: () => void;
   goToCutline: () => void;
+  goToFabric: () => void;
+  goToLayout: () => void;
+  goToOrder: () => void;
   goToComplete: () => void;
+
+  // 원단 설정
+  setPaperType: (paperType: PaperTypeId) => void;
+  setSize: (size: SizeOptionId) => void;
+  setQuantity: (quantity: number) => void;
+
+  // 스티커 배치
+  setStickerImage: (image: string, size: { width: number; height: number }) => void;
+  addPlacedSticker: (sticker?: Partial<PlacedSticker>) => string;
+  removePlacedSticker: (id: string) => void;
+  updatePlacedSticker: (id: string, updates: Partial<PlacedSticker>) => void;
+  selectPlacedSticker: (id: string | null) => void;
+  autoLayoutStickers: (count: number) => void;
+  clearPlacedStickers: () => void;
 
   // 캔버스
   setZoom: (zoom: number) => void;
