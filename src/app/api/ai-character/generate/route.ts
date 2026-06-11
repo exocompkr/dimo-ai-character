@@ -16,9 +16,9 @@ type OpenAIImageModel =
 // 기본 모델 (빠른 속도)
 const DEFAULT_MODEL: OpenAIImageModel = "gpt-image-1.5";
 
-// 깔끔한 이미지 생성을 위한 suffix (흰 배경)
+// 깔끔한 이미지 생성을 위한 suffix (크로마키 그린 배경 - 캐릭터 내 흰색 보존)
 const BASE_SUFFIX =
-  ", isolated subject only, no shadow, no particles, no floor, no decorations, no additional elements, nothing else, clean edges, plain white background";
+  ", isolated subject only, no shadow, no particles, no floor, no decorations, no additional elements, nothing else, clean edges, solid bright green chroma key background (#00FF00)";
 
 /**
  * 스타일 ID로 프롬프트 조회
@@ -102,11 +102,12 @@ async function fetchImageAsBuffer(url: string): Promise<Buffer> {
 }
 
 /**
- * 흰색 배경을 투명으로 변환
- * - 흰색에 가까운 픽셀(R,G,B 모두 > threshold)을 투명하게
+ * 크로마키 그린 배경을 투명으로 변환
+ * - 녹색에 가까운 픽셀(G가 높고 R,B가 낮음)을 투명하게
  * - 경계 부분은 부드럽게 처리 (anti-aliasing)
+ * - 캐릭터 내부의 흰색은 보존됨
  */
-async function removeWhiteBackground(imageBuffer: Buffer): Promise<Buffer> {
+async function removeGreenBackground(imageBuffer: Buffer): Promise<Buffer> {
   const image = sharp(imageBuffer);
   const { width, height } = await image.metadata();
 
@@ -122,29 +123,29 @@ async function removeWhiteBackground(imageBuffer: Buffer): Promise<Buffer> {
 
   const pixels = new Uint8ClampedArray(data);
 
-  // 흰색 판단 임계값
-  const WHITE_THRESHOLD = 245; // R, G, B 모두 이 값 이상이면 흰색으로 간주
-  const SOFT_THRESHOLD = 230; // 이 값 이상이면 반투명 처리
-
   for (let i = 0; i < pixels.length; i += 4) {
     const r = pixels[i];
     const g = pixels[i + 1];
     const b = pixels[i + 2];
 
-    // 완전 흰색에 가까운 경우 → 완전 투명
-    if (r >= WHITE_THRESHOLD && g >= WHITE_THRESHOLD && b >= WHITE_THRESHOLD) {
+    // 크로마키 그린 감지: G가 높고 R,B가 낮은 경우
+    // 순수 녹색 #00FF00 기준
+    const isGreen = g > 180 && r < 120 && b < 120;
+    const isSoftGreen = g > 150 && r < 150 && b < 150 && g > r && g > b;
+
+    if (isGreen) {
+      // 완전 녹색 → 완전 투명
       pixels[i + 3] = 0;
-    }
-    // 밝은 회색/흰색 경계 → 반투명 (부드러운 경계)
-    else if (r >= SOFT_THRESHOLD && g >= SOFT_THRESHOLD && b >= SOFT_THRESHOLD) {
-      // 얼마나 흰색에 가까운지 계산 (0~1)
-      const whiteness = Math.min(
-        (r - SOFT_THRESHOLD) / (WHITE_THRESHOLD - SOFT_THRESHOLD),
-        (g - SOFT_THRESHOLD) / (WHITE_THRESHOLD - SOFT_THRESHOLD),
-        (b - SOFT_THRESHOLD) / (WHITE_THRESHOLD - SOFT_THRESHOLD)
+    } else if (isSoftGreen) {
+      // 녹색 경계 → 반투명 (부드러운 경계)
+      // 얼마나 녹색에 가까운지 계산 (G가 R,B보다 얼마나 높은지)
+      const greenness = Math.min(
+        (g - r) / 100,
+        (g - b) / 100,
+        (g - 150) / 50
       );
-      // 기존 알파에 whiteness 비율만큼 감소
-      const newAlpha = Math.round(pixels[i + 3] * (1 - whiteness * 0.8));
+      const clampedGreenness = Math.max(0, Math.min(1, greenness));
+      const newAlpha = Math.round(pixels[i + 3] * (1 - clampedGreenness * 0.9));
       pixels[i + 3] = newAlpha;
     }
   }
@@ -165,8 +166,8 @@ async function removeWhiteBackground(imageBuffer: Buffer): Promise<Buffer> {
  * POST /api/ai-character/generate
  *
  * 업로드된 이미지를 기반으로 AI 캐릭터를 생성합니다.
- * 1. OpenAI의 /v1/images/edits 엔드포인트로 흰 배경 캐릭터 생성
- * 2. 후처리로 흰색 배경을 투명으로 변환
+ * 1. OpenAI의 /v1/images/edits 엔드포인트로 크로마키 그린 배경 캐릭터 생성
+ * 2. 후처리로 녹색 배경을 투명으로 변환 (캐릭터 내 흰색 보존)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -288,8 +289,8 @@ export async function POST(request: NextRequest) {
       imageBuffer = await fetchImageAsBuffer(data.data[0].url!);
     }
 
-    // 흰색 배경을 투명으로 변환
-    const transparentBuffer = await removeWhiteBackground(imageBuffer);
+    // 크로마키 그린 배경을 투명으로 변환
+    const transparentBuffer = await removeGreenBackground(imageBuffer);
 
     // base64 Data URL로 변환
     const resultImage = `data:image/png;base64,${transparentBuffer.toString("base64")}`;
