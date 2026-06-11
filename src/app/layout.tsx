@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
-import { PromoStrip } from "@/components/layout/PromoStrip";
-import { AppBar } from "@/components/layout/AppBar";
-import { TopTabs } from "@/components/layout/TopTabs";
-import { Footer } from "@/components/layout/Footer";
+import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
 
 export const metadata: Metadata = {
   title: "디모 — AI 캐릭터 네임스티커",
@@ -21,18 +18,22 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        {/* Pretendard (기본 UI 폰트) */}
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
         />
+        {/* 스티커 편집용 폰트들 (Google Fonts) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Pen+Script&family=Gamja+Flower&family=Jua&family=Black+Han+Sans&family=Do+Hyeon&family=Gaegu:wght@400;700&family=Hi+Melody&family=Dokdo&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body>
         <Providers>
-          <PromoStrip />
-          <AppBar />
-          <TopTabs />
-          <main>{children}</main>
-          <Footer />
+          <LayoutWrapper>{children}</LayoutWrapper>
         </Providers>
       </body>
     </html>

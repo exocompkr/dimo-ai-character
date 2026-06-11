@@ -454,10 +454,10 @@ function ResultView({
   onDownload: () => void;
   onRegenerate: () => void;
 }) {
+  const router = useRouter();
+
   const handleMakeSticker = () => {
-    // TODO: 스티커 만들기 페이지로 이동
-    // eslint-disable-next-line no-alert
-    alert("스티커 만들기 기능은 준비 중입니다!");
+    router.push("/sticker-editor");
   };
 
   return (
