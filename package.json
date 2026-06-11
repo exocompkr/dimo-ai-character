@@ -39,6 +39,10 @@
     "tailwindcss": "^4.3.0",
     "typescript": "^5.6.3"
   },
+  "optionalDependencies": {
+    "@img/sharp-linux-x64": "^0.35.0",
+    "@img/sharp-win32-x64": "^0.35.0"
+  },
   "msw": {
     "workerDirectory": [
       "public"
