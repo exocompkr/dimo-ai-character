@@ -6,6 +6,20 @@
       "description": "동글동글 귀여운 캐릭터 스타일",
       "previewImage": "/images/styles/cute-sd.png",
       "prompt": "The reference image style is the highest priority.\n\nCopy the exact illustration style of the reference image.\n\nJapanese SD mascot merchandise artwork.\nAcrylic stand illustration.\nSticker illustration.\n\nExtremely oversized head (80% of total height).\nTiny plush-like body.\nUltra short arms and legs.\nRound cheeks.\nSimple cute face.\nLarge simple anime eyes.\nTiny nose and mouth.\n\nSoft brown lineart.\nVariable line weight.\n\nLarge hair clumps.\nSimplified hair shapes.\nNo individual hair strands.\n\nUse cel shading only.\nUse flat color shadow shapes.\nUse hard-edged shadow planes.\nCreate depth using color blocks.\nNo gradients.\nNo airbrush shading.\nNo soft shading.\n\nPVC figure paint style.\n2D illustration with figure-like volume.\n\nSingle isolated character.\nTransparent background.\nCharacter only.\n\nNo floor.\nNo shadow.\nNo particles.\nNo decoration.\nNo props.\nNo scenery.\nNo text.\nNo watermark.\n\nNo realism.\nNo semi-realism.\nNo photorealism.\nNo Disney.\nNo Pixar.\nNo western cartoon.\nNo 3D render."
+    },
+    {
+      "id": "3d",
+      "name": "3D 피규어 스타일",
+      "description": "입체감 있는 3D 피규어 캐릭터",
+      "previewImage": "/images/aiCharacters/3d.png",
+      "prompt": "The reference image style is the highest priority.\n\nCopy the exact illustration style of the reference image.\n\n3D rendered chibi character.\nBlind box collectible figure style.\nPVC figure artwork.\nGacha figure illustration.\n\nExtremely oversized head (75% of total height).\nCompact rounded body.\nShort stubby limbs.\nRound cheeks.\nLarge sparkling anime eyes.\nSmall nose and mouth.\n\nSmooth 3D render.\nSoft ambient occlusion.\nSubtle gradients.\nSoft diffuse lighting.\n\nVoluminous hair with soft edges.\nSimplified hair clumps.\nNo individual hair strands.\n\nUse soft shading.\nUse smooth gradients.\nUse ambient occlusion for depth.\nGentle highlight on hair and eyes.\nMatte plastic material look.\n\n3D figure aesthetic.\nSmooth rounded surfaces.\nToy-like proportions.\n\nSingle isolated character.\nTransparent background.\nCharacter only.\n\nNo floor.\nNo shadow.\nNo particles.\nNo decoration.\nNo props.\nNo scenery.\nNo text.\nNo watermark.\n\nNo realism.\nNo semi-realism.\nNo photorealism.\nNo flat 2D.\nNo line art.\nNo sketch style."
+    },
+    {
+      "id": "simple",
+      "name": "심플 라인 드로잉",
+      "description": "깔끔한 흑백 라인아트 스타일",
+      "previewImage": "/images/aiCharacters/simple.png",
+      "prompt": "The reference image style is the highest priority.\n\nCopy the exact illustration style of the reference image.\n\nMinimalist line art character.\nSimple black and white illustration.\nClean linework sticker design.\nMonochrome chibi character.\n\nExtremely oversized head (80% of total height).\nTiny simplified body.\nUltra short arms and legs.\nRound face shape.\nSimple dot eyes or minimal eye detail.\nTiny nose and mouth.\n\nClean black outlines.\nConsistent line weight.\nBold confident strokes.\n\nSimplified hair shapes.\nLarge hair clumps.\nNo complex hair details.\nNo individual strands.\n\nNo shading.\nNo gradients.\nNo colors.\nBlack lines only.\nWhite fill only.\nPure monochrome.\n\nFlat 2D illustration.\nSticker-ready artwork.\nColoring book style simplicity.\n\nSingle isolated character.\nTransparent or white background.\nCharacter only.\n\nNo floor.\nNo shadow.\nNo particles.\nNo decoration.\nNo props.\nNo scenery.\nNo text.\nNo watermark.\n\nNo realism.\nNo semi-realism.\nNo photorealism.\nNo 3D render.\nNo color.\nNo grayscale shading."
     }
   ]
 }
