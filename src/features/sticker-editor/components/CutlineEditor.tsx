@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Minus, Plus, Edit3, Loader2 } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Edit3, Loader2, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useStickerEditor } from "@/stores/stickerEditorStore";
 import { useCutlineGeneration } from "../hooks/useCutlineGeneration";
 import { formatSizeCompact } from "../utils/unit-conversion";
 import type { ImageElement } from "../types/editor.types";
 
-/** 캔버스 표시 크기 (EditorCanvas와 동일하게 유지) */
+/** 캔버스 기본 표시 크기 */
 const CANVAS_SIZE = 480;
 
 /** 고해상도 렌더링을 위한 스케일 팩터 */
@@ -20,14 +20,37 @@ const getPixelRatio = () => typeof window !== "undefined" ? Math.min(window.devi
  */
 export function CutlineEditor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [loadedImages, setLoadedImages] = useState<Map<string, HTMLImageElement>>(
     new Map()
   );
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [canvasScale, setCanvasScale] = useState(1);
 
-  const { elements, cutline, setCutlineOffset, goToEdit, goToComplete } =
+  const { elements, cutline, setCutlineOffset, goToEdit, goToFabric } =
     useStickerEditor();
 
   const { cutlinePath, isGenerating } = useCutlineGeneration();
+
+  // 반응형 캔버스 스케일 계산
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth - 32; // padding 고려
+        const containerHeight = containerRef.current.clientHeight - 80; // 라벨 높이 고려
+        const newScale = Math.min(
+          containerWidth / CANVAS_SIZE,
+          containerHeight / CANVAS_SIZE,
+          1
+        );
+        setCanvasScale(newScale);
+      }
+    };
+
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, []);
 
   // 이미지 로드
   useEffect(() => {
@@ -174,102 +197,140 @@ export function CutlineEditor() {
   const totalHeight = totalBounds.maxY - totalBounds.minY;
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
       {/* 캔버스 영역 */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-[#f5f5f5] p-8">
+      <div
+        ref={containerRef}
+        className="flex flex-1 flex-col items-center justify-center bg-[#f5f5f5] p-4 lg:p-8"
+      >
         {/* 크기 라벨 */}
-        <div className="mb-4 rounded-md bg-[#4a4a4a] px-4 py-1.5 text-[13px] font-medium text-white shadow-md">
+        <div className="mb-3 rounded-md bg-[#4a4a4a] px-3 py-1 text-[11px] font-medium text-white shadow-md lg:mb-4 lg:px-4 lg:py-1.5 lg:text-[13px]">
           {formatSizeCompact(totalWidth, totalHeight)}
         </div>
 
-        {/* 캔버스 */}
-        <div className="relative rounded-lg border-2 border-white bg-white shadow-lg">
+        {/* 캔버스 - 스케일 적용 */}
+        <div
+          className="relative origin-top rounded-lg border-2 border-white bg-white shadow-lg"
+          style={{
+            width: CANVAS_SIZE * canvasScale,
+            height: CANVAS_SIZE * canvasScale,
+          }}
+        >
           <canvas
             ref={canvasRef}
             width={CANVAS_SIZE}
             height={CANVAS_SIZE}
             className="rounded-lg"
+            style={{
+              width: CANVAS_SIZE * canvasScale,
+              height: CANVAS_SIZE * canvasScale,
+            }}
           />
 
           {/* 로딩 오버레이 */}
           {isGenerating && (
             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-white/80">
-              <Loader2 className="size-8 animate-spin text-accent" />
+              <Loader2 className="size-6 animate-spin text-accent lg:size-8" />
             </div>
           )}
         </div>
       </div>
 
-      {/* 우측 패널 */}
-      <div className="flex w-80 flex-col border-l border-line bg-white">
-        {/* 헤더 */}
-        <div className="flex items-center justify-center border-b border-line p-4">
+      {/* 모바일: 패널 토글 버튼 */}
+      <button
+        onClick={() => setIsPanelOpen(!isPanelOpen)}
+        className="flex items-center justify-center gap-2 border-t border-line bg-white py-3 lg:hidden"
+      >
+        {isPanelOpen ? (
+          <ChevronDown className="size-5 text-ink-soft" />
+        ) : (
+          <ChevronUp className="size-5 text-ink-soft" />
+        )}
+        <span className="text-sm font-medium text-ink">
+          {isPanelOpen ? "설정 접기" : "칼선 설정"}
+        </span>
+      </button>
+
+      {/* 우측/하단 패널 */}
+      <div
+        className={cn(
+          "flex flex-col border-t border-line bg-white transition-all duration-300 lg:w-80 lg:border-l lg:border-t-0",
+          isPanelOpen ? "max-h-[50vh] lg:max-h-none" : "max-h-0 overflow-hidden lg:max-h-none"
+        )}
+      >
+        {/* 헤더 - 데스크탑만 */}
+        <div className="hidden items-center justify-center border-b border-line p-4 lg:flex">
           <h2 className="text-lg font-bold text-ink">스티커 칼선 편집</h2>
         </div>
 
         {/* 콘텐츠 */}
-        <div className="flex-1 p-6">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
           {/* 안내 문구 */}
-          <div className="mb-6 flex items-start gap-2 rounded-xl bg-peach/50 p-4">
-            <span className="text-lg">✂️</span>
-            <p className="text-sm text-ink">
+          <div className="mb-4 flex items-start gap-2 rounded-xl bg-peach/50 p-3 lg:mb-6 lg:p-4">
+            <span className="text-base lg:text-lg">✂️</span>
+            <p className="text-xs text-ink lg:text-sm">
               스티커를 뗄 수 있도록 칼선 모양을 편집해 주세요.
             </p>
           </div>
 
           {/* 칼선 간격 조절 */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-ink">칼선 간격</h3>
+          <div className="space-y-3 lg:space-y-4">
+            <h3 className="text-xs font-semibold text-ink lg:text-sm">칼선 간격</h3>
 
             <div className="flex items-center justify-between rounded-xl border border-line p-2">
               <button
                 onClick={() => handleOffsetChange(-0.5)}
-                className="flex size-10 items-center justify-center rounded-lg transition-colors hover:bg-bg-soft active:bg-peach"
+                className="flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-bg-soft active:bg-peach lg:size-10"
               >
-                <Minus className="size-5" />
+                <Minus className="size-4 lg:size-5" />
               </button>
 
               <div className="flex flex-col items-center">
-                <span className="text-2xl font-bold text-ink">
+                <span className="text-xl font-bold text-ink lg:text-2xl">
                   {cutline.offset}
                 </span>
-                <span className="text-xs text-ink-soft">mm</span>
+                <span className="text-[10px] text-ink-soft lg:text-xs">mm</span>
               </div>
 
               <button
                 onClick={() => handleOffsetChange(0.5)}
-                className="flex size-10 items-center justify-center rounded-lg transition-colors hover:bg-bg-soft active:bg-peach"
+                className="flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-bg-soft active:bg-peach lg:size-10"
               >
-                <Plus className="size-5" />
+                <Plus className="size-4 lg:size-5" />
               </button>
             </div>
 
-            {/* 직접 편집 버튼 */}
-            <button
-              className="btn-outline w-full justify-center gap-2"
-              disabled
-            >
-              <Edit3 className="size-4" />
-              직접 편집
-            </button>
+            {/* 직접 편집 버튼 - 데스크탑만 */}
+            <div className="hidden lg:block">
+              <button
+                className="btn-outline w-full justify-center gap-2"
+                disabled
+              >
+                <Edit3 className="size-4" />
+                직접 편집
+              </button>
 
-            <p className="text-center text-xs text-ink-soft">
-              직접 편집 기능은 준비 중입니다
-            </p>
+              <p className="mt-2 text-center text-xs text-ink-soft">
+                직접 편집 기능은 준비 중입니다
+              </p>
+            </div>
           </div>
         </div>
 
         {/* 하단 버튼 */}
-        <div className="flex gap-3 border-t border-line p-4">
-          <button onClick={goToEdit} className="btn-outline flex-1 justify-center">
+        <div className="flex gap-3 border-t border-line p-3 lg:p-4">
+          <button
+            onClick={goToEdit}
+            className="btn-outline flex-1 justify-center text-xs lg:text-sm"
+          >
             <ArrowLeft className="size-4" />
             이전
           </button>
           <button
-            onClick={goToComplete}
-            className="btn-primary flex-1 justify-center"
+            onClick={goToFabric}
+            className="btn-primary flex-1 justify-center text-xs lg:text-sm"
           >
-            완료
+            다음
           </button>
         </div>
       </div>

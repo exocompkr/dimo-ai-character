@@ -8,7 +8,11 @@ import type {
   EditorStep,
   AlignDirection,
   HistorySnapshot,
+  PaperTypeId,
+  SizeOptionId,
+  PlacedSticker,
 } from "@/features/sticker-editor/types/editor.types";
+import { PAPER_TYPES, getSizeOption } from "@/features/sticker-editor/config/paper-options";
 
 /** 고유 ID 생성 */
 function generateId(): string {
@@ -35,6 +39,17 @@ const initialState = {
     color: "#ff8fa3", // 진한 핑크 (더 잘 보임)
     strokeWidth: 2,
     path: null,
+  },
+  fabric: {
+    selectedPaperType: null as PaperTypeId | null,
+    selectedSize: null as SizeOptionId | null,
+    quantity: 1,
+  },
+  layout: {
+    placedStickers: [] as PlacedSticker[],
+    selectedStickerId: null as string | null,
+    stickerImage: null as string | null,
+    stickerSize: { width: 100, height: 100 },
   },
   step: "edit" as EditorStep,
   initialImage: null as string | null,
@@ -442,7 +457,169 @@ export const useStickerEditor = create<StickerEditorStore>()((set, get) => ({
         set({ step: "cutline" });
       },
 
+      goToFabric: () => set({ step: "fabric" }),
+
+      goToLayout: () => set({ step: "layout" }),
+
+      goToOrder: () => set({ step: "order" }),
+
       goToComplete: () => set({ step: "complete" }),
+
+      // ─────────────────────────────────────────────
+      // 원단 설정
+      // ─────────────────────────────────────────────
+
+      setPaperType: (paperType: PaperTypeId) => {
+        const paper = PAPER_TYPES.find((p) => p.id === paperType);
+        const currentSize = get().fabric.selectedSize;
+
+        // 선택된 용지에서 현재 크기가 사용 불가능하면 첫 번째 가능한 크기로 변경
+        const isCurrentSizeAvailable =
+          currentSize && paper?.availableSizes.includes(currentSize);
+
+        set((state) => ({
+          fabric: {
+            ...state.fabric,
+            selectedPaperType: paperType,
+            selectedSize: isCurrentSizeAvailable
+              ? currentSize
+              : paper?.availableSizes[0] ?? null,
+          },
+        }));
+      },
+
+      setSize: (size: SizeOptionId) =>
+        set((state) => ({
+          fabric: { ...state.fabric, selectedSize: size },
+        })),
+
+      setQuantity: (quantity: number) =>
+        set((state) => ({
+          fabric: { ...state.fabric, quantity: Math.max(1, quantity) },
+        })),
+
+      // ─────────────────────────────────────────────
+      // 스티커 배치
+      // ─────────────────────────────────────────────
+
+      setStickerImage: (image, size) =>
+        set((state) => ({
+          layout: { ...state.layout, stickerImage: image, stickerSize: size },
+        })),
+
+      addPlacedSticker: (sticker) => {
+        const id = generateId();
+        const newSticker: PlacedSticker = {
+          id,
+          x: sticker?.x ?? 100,
+          y: sticker?.y ?? 100,
+          scale: sticker?.scale ?? 1,
+          rotation: sticker?.rotation ?? 0,
+        };
+
+        set((state) => ({
+          layout: {
+            ...state.layout,
+            placedStickers: [...state.layout.placedStickers, newSticker],
+            selectedStickerId: id,
+          },
+        }));
+
+        return id;
+      },
+
+      removePlacedSticker: (id) =>
+        set((state) => ({
+          layout: {
+            ...state.layout,
+            placedStickers: state.layout.placedStickers.filter((s) => s.id !== id),
+            selectedStickerId:
+              state.layout.selectedStickerId === id
+                ? null
+                : state.layout.selectedStickerId,
+          },
+        })),
+
+      updatePlacedSticker: (id, updates) =>
+        set((state) => ({
+          layout: {
+            ...state.layout,
+            placedStickers: state.layout.placedStickers.map((s) =>
+              s.id === id ? { ...s, ...updates } : s
+            ),
+          },
+        })),
+
+      selectPlacedSticker: (id) =>
+        set((state) => ({
+          layout: { ...state.layout, selectedStickerId: id },
+        })),
+
+      autoLayoutStickers: (count) => {
+        const { fabric, layout } = get();
+        const sizeOption = fabric.selectedSize
+          ? getSizeOption(fabric.selectedSize)
+          : null;
+
+        if (!sizeOption) return;
+
+        // mm to px 변환 (1mm = 3.78px at 96dpi)
+        const PX_PER_MM = 3.78;
+        const artboardWidth = sizeOption.width * PX_PER_MM;
+        const artboardHeight = sizeOption.height * PX_PER_MM;
+
+        // 스티커 크기 (칼선 포함)
+        const stickerW = layout.stickerSize.width;
+        const stickerH = layout.stickerSize.height;
+
+        // 아트보드 가장자리 여백
+        const padding = 20;
+        // 스티커 간 간격 (칼선이 겹치지 않도록 최소 간격)
+        const gap = 5;
+
+        // 배치 가능한 열/행 수 계산
+        const cols = Math.floor(
+          (artboardWidth - padding * 2 + gap) / (stickerW + gap)
+        );
+        const rows = Math.floor(
+          (artboardHeight - padding * 2 + gap) / (stickerH + gap)
+        );
+
+        const maxCount = cols * rows;
+        const actualCount = Math.min(count, maxCount);
+
+        const stickers: PlacedSticker[] = [];
+
+        for (let i = 0; i < actualCount; i++) {
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+
+          stickers.push({
+            id: generateId(),
+            x: padding + col * (stickerW + gap) + stickerW / 2,
+            y: padding + row * (stickerH + gap) + stickerH / 2,
+            scale: 1,
+            rotation: 0,
+          });
+        }
+
+        set((state) => ({
+          layout: {
+            ...state.layout,
+            placedStickers: stickers,
+            selectedStickerId: null,
+          },
+        }));
+      },
+
+      clearPlacedStickers: () =>
+        set((state) => ({
+          layout: {
+            ...state.layout,
+            placedStickers: [],
+            selectedStickerId: null,
+          },
+        })),
 
       // ─────────────────────────────────────────────
       // 캔버스

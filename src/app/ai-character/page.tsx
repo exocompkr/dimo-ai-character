@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   Sparkles,
   Loader2,
-  Download,
   RefreshCw,
   Check,
   ImageIcon,
@@ -119,17 +118,6 @@ export default function AiCharacterPage() {
     }
   };
 
-  const handleDownload = () => {
-    if (!generatedImage) return;
-
-    const link = document.createElement("a");
-    link.href = generatedImage;
-    link.download = `dimo-character-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const handleGoHome = () => {
     reset();
     router.push("/");
@@ -173,8 +161,8 @@ export default function AiCharacterPage() {
       {generatedImage && uploadedImage ? (
         <ResultView
           generatedImage={generatedImage}
+          uploadedImage={uploadedImage}
           styleName={selectedStyle?.name || ""}
-          onDownload={handleDownload}
           onRegenerate={() => {
             resetGeneration();
           }}
@@ -445,13 +433,13 @@ function StyleCard({
  */
 function ResultView({
   generatedImage,
+  uploadedImage,
   styleName,
-  onDownload,
   onRegenerate,
 }: {
   generatedImage: string;
+  uploadedImage: string;
   styleName: string;
-  onDownload: () => void;
   onRegenerate: () => void;
 }) {
   const router = useRouter();
@@ -459,6 +447,37 @@ function ResultView({
   const handleMakeSticker = () => {
     router.push("/sticker-editor");
   };
+
+  // 이미지 보호: 우클릭, 드래그 방지
+  const preventCopy = (e: React.MouseEvent | React.DragEvent) => {
+    e.preventDefault();
+    return false;
+  };
+
+  // 키보드 캡쳐 방지 (PrintScreen 등)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // PrintScreen 키 차단
+      if (e.key === "PrintScreen") {
+        e.preventDefault();
+      }
+      // Ctrl+P (인쇄) 차단
+      if (e.ctrlKey && e.key === "p") {
+        e.preventDefault();
+      }
+      // Ctrl+S (저장) 차단
+      if (e.ctrlKey && e.key === "s") {
+        e.preventDefault();
+      }
+      // Ctrl+Shift+S 차단
+      if (e.ctrlKey && e.shiftKey && e.key === "S") {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <div className="flex flex-col items-center gap-6">
@@ -468,48 +487,65 @@ function ResultView({
         <span className="font-bold text-ink">캐릭터가 완성되었어요!</span>
       </div>
 
-      {/* 생성된 캐릭터 (중앙, 크게) */}
-      <div className="relative w-full max-w-sm">
-        {/* 배경 장식 */}
-        <div className="absolute -inset-4 rounded-[28px] bg-gradient-to-br from-peach/50 via-pink/30 to-peach/50 blur-xl" />
-
-        <div className="relative">
-          {/* 스타일 라벨 */}
-          <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
-            <span className="rounded-full bg-white px-4 py-1.5 text-[12px] font-bold text-accent-deep shadow-lg">
-              {styleName}
-            </span>
-          </div>
-
-          {/* 캐릭터 이미지 */}
+      {/* 이미지 비교 영역 - 보호 적용 */}
+      <div
+        className="flex w-full max-w-2xl select-none flex-col items-center justify-center gap-4 px-4 sm:flex-row sm:gap-6"
+        onContextMenu={preventCopy}
+        onDragStart={preventCopy}
+      >
+        {/* 원본 이미지 */}
+        <div className="flex flex-col items-center gap-2 sm:gap-3">
+          <span className="rounded-full bg-gray-100 px-3 py-1 text-[11px] font-medium text-ink-soft sm:text-[12px]">
+            원본 사진
+          </span>
           <div
-            className="relative aspect-square overflow-hidden rounded-[24px] border-2 border-white shadow-2xl"
+            className="relative aspect-square w-36 overflow-hidden rounded-2xl border-2 border-line bg-bg-soft shadow-lg sm:w-48 md:w-56"
+            onContextMenu={preventCopy}
+          >
+            <Image
+              src={uploadedImage}
+              alt="원본 사진"
+              fill
+              className="pointer-events-none object-cover"
+              draggable={false}
+            />
+          </div>
+        </div>
+
+        {/* 화살표 - 모바일에서 세로, 데스크탑에서 가로 */}
+        <div className="flex items-center justify-center">
+          <span className="text-xl text-accent sm:text-2xl">
+            <span className="hidden sm:inline">→</span>
+            <span className="sm:hidden">↓</span>
+          </span>
+        </div>
+
+        {/* 생성된 캐릭터 */}
+        <div className="flex flex-col items-center gap-2 sm:gap-3">
+          <span className="rounded-full bg-accent px-3 py-1 text-[11px] font-bold text-white sm:text-[12px]">
+            {styleName}
+          </span>
+          <div
+            className="relative aspect-square w-36 overflow-hidden rounded-2xl border-2 border-accent shadow-xl sm:w-48 md:w-56"
             style={{
               background:
                 "repeating-conic-gradient(#f5f5f5 0% 25%, #fff 0% 50%) 50% / 16px 16px",
             }}
+            onContextMenu={preventCopy}
           >
             <Image
               src={generatedImage}
               alt="생성된 캐릭터"
               fill
-              className="object-contain p-4"
+              className="pointer-events-none object-contain p-2 sm:p-3"
+              draggable={false}
             />
           </div>
-
-          {/* 다운로드 버튼 (우상단) */}
-          <button
-            onClick={onDownload}
-            className="absolute -right-2 -top-2 z-10 flex size-10 items-center justify-center rounded-full border border-line bg-white shadow-lg transition-all hover:scale-110 hover:bg-bg-soft"
-            aria-label="다운로드"
-          >
-            <Download className="size-5 text-ink" />
-          </button>
         </div>
       </div>
 
       {/* 메인 CTA: 스티커 만들기 */}
-      <div className="mt-2 flex w-full max-w-sm flex-col gap-3">
+      <div className="mt-4 flex w-full max-w-md flex-col gap-3">
         <button
           onClick={handleMakeSticker}
           className="btn-primary w-full justify-center gap-2 py-4 text-[16px] shadow-lg transition-transform hover:scale-[1.02]"

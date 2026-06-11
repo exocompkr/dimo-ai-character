@@ -173,20 +173,61 @@ export function TextEditPanel() {
     selectedText.fontStyle === "bold italic";
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3 lg:gap-4">
       {/* 텍스트 입력 */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-ink-soft">텍스트</label>
+      <div className="flex flex-col gap-1">
+        <label className="text-[10px] font-medium text-ink-soft lg:text-xs">텍스트</label>
         <textarea
           value={selectedText.text}
           onChange={handleTextChange}
-          className="min-h-[60px] w-full resize-none rounded-lg border border-line bg-white p-2 text-sm text-ink outline-none focus:border-accent"
+          className="min-h-[48px] w-full resize-none rounded-lg border border-line bg-white p-2 text-xs text-ink outline-none focus:border-accent lg:min-h-[60px] lg:text-sm"
           placeholder="텍스트를 입력하세요"
         />
       </div>
 
-      {/* 폰트 선택 */}
-      <div className="flex flex-col gap-1.5">
+      {/* 모바일: 폰트 + 크기를 가로 배치 */}
+      <div className="flex gap-2 lg:hidden">
+        {/* 폰트 선택 */}
+        <select
+          value={selectedText.fontFamily}
+          onChange={handleFontChange}
+          className="flex-1 rounded-lg border border-line bg-white p-1.5 text-xs text-ink outline-none focus:border-accent"
+          style={{ fontFamily: selectedText.fontFamily }}
+        >
+          {AVAILABLE_FONTS.map((font) => (
+            <option key={font.value} value={font.value} style={{ fontFamily: font.value }}>
+              {font.label}
+            </option>
+          ))}
+        </select>
+
+        {/* 폰트 크기 */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => handleFontSizeChange(-1)}
+            className="flex size-7 items-center justify-center rounded-lg border border-line bg-white text-ink transition-colors hover:bg-bg-soft"
+          >
+            <Minus className="size-3" />
+          </button>
+          <input
+            type="number"
+            value={selectedText.fontSize}
+            onChange={handleFontSizeInput}
+            min={8}
+            max={200}
+            className="w-12 rounded-lg border border-line bg-white p-1.5 text-center text-xs text-ink outline-none focus:border-accent"
+          />
+          <button
+            onClick={() => handleFontSizeChange(1)}
+            className="flex size-7 items-center justify-center rounded-lg border border-line bg-white text-ink transition-colors hover:bg-bg-soft"
+          >
+            <Plus className="size-3" />
+          </button>
+        </div>
+      </div>
+
+      {/* 데스크탑: 폰트 선택 */}
+      <div className="hidden flex-col gap-1.5 lg:flex">
         <label className="text-xs font-medium text-ink-soft">폰트</label>
         <select
           value={selectedText.fontFamily}
@@ -249,8 +290,8 @@ export function TextEditPanel() {
         </select>
       </div>
 
-      {/* 폰트 크기 */}
-      <div className="flex flex-col gap-1.5">
+      {/* 폰트 크기 - 데스크탑만 */}
+      <div className="hidden flex-col gap-1.5 lg:flex">
         <label className="text-xs font-medium text-ink-soft">크기</label>
         <div className="flex items-center gap-2">
           <button
@@ -277,90 +318,90 @@ export function TextEditPanel() {
       </div>
 
       {/* 스타일 & 정렬 */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-ink-soft">스타일</label>
+      <div className="flex flex-col gap-1">
+        <label className="text-[10px] font-medium text-ink-soft lg:text-xs">스타일</label>
         <div className="flex gap-1">
           {/* 굵게 */}
           <button
             onClick={handleBoldToggle}
             className={cn(
-              "flex size-9 items-center justify-center rounded-lg border transition-colors",
+              "flex size-7 items-center justify-center rounded-lg border transition-colors lg:size-9",
               isBold
                 ? "border-accent bg-peach text-accent"
                 : "border-line bg-white text-ink hover:bg-bg-soft"
             )}
             title="굵게"
           >
-            <Bold className="size-4" />
+            <Bold className="size-3.5 lg:size-4" />
           </button>
           {/* 기울임 */}
           <button
             onClick={handleItalicToggle}
             className={cn(
-              "flex size-9 items-center justify-center rounded-lg border transition-colors",
+              "flex size-7 items-center justify-center rounded-lg border transition-colors lg:size-9",
               isItalic
                 ? "border-accent bg-peach text-accent"
                 : "border-line bg-white text-ink hover:bg-bg-soft"
             )}
             title="기울임"
           >
-            <Italic className="size-4" />
+            <Italic className="size-3.5 lg:size-4" />
           </button>
 
-          <div className="mx-1 w-px bg-line" />
+          <div className="mx-0.5 w-px bg-line lg:mx-1" />
 
           {/* 왼쪽 정렬 */}
           <button
             onClick={() => handleAlignChange("left")}
             className={cn(
-              "flex size-9 items-center justify-center rounded-lg border transition-colors",
+              "flex size-7 items-center justify-center rounded-lg border transition-colors lg:size-9",
               selectedText.align === "left"
                 ? "border-accent bg-peach text-accent"
                 : "border-line bg-white text-ink hover:bg-bg-soft"
             )}
             title="왼쪽 정렬"
           >
-            <AlignLeft className="size-4" />
+            <AlignLeft className="size-3.5 lg:size-4" />
           </button>
           {/* 가운데 정렬 */}
           <button
             onClick={() => handleAlignChange("center")}
             className={cn(
-              "flex size-9 items-center justify-center rounded-lg border transition-colors",
+              "flex size-7 items-center justify-center rounded-lg border transition-colors lg:size-9",
               selectedText.align === "center"
                 ? "border-accent bg-peach text-accent"
                 : "border-line bg-white text-ink hover:bg-bg-soft"
             )}
             title="가운데 정렬"
           >
-            <AlignCenter className="size-4" />
+            <AlignCenter className="size-3.5 lg:size-4" />
           </button>
           {/* 오른쪽 정렬 */}
           <button
             onClick={() => handleAlignChange("right")}
             className={cn(
-              "flex size-9 items-center justify-center rounded-lg border transition-colors",
+              "flex size-7 items-center justify-center rounded-lg border transition-colors lg:size-9",
               selectedText.align === "right"
                 ? "border-accent bg-peach text-accent"
                 : "border-line bg-white text-ink hover:bg-bg-soft"
             )}
             title="오른쪽 정렬"
           >
-            <AlignRight className="size-4" />
+            <AlignRight className="size-3.5 lg:size-4" />
           </button>
         </div>
       </div>
 
       {/* 색상 */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-ink-soft">색상</label>
-        <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-col gap-1">
+        <label className="text-[10px] font-medium text-ink-soft lg:text-xs">색상</label>
+        <div className="flex flex-wrap gap-1 lg:gap-1.5">
           {TEXT_COLORS.map((color) => (
             <button
               key={color}
               onClick={() => handleColorChange(color)}
               className={cn(
-                "size-7 rounded-lg border-2 transition-transform hover:scale-110",
+                "size-6 rounded-md border-2 transition-transform hover:scale-110 lg:size-7 lg:rounded-lg",
                 selectedText.fill === color
                   ? "border-accent"
                   : "border-transparent"
@@ -370,8 +411,8 @@ export function TextEditPanel() {
             />
           ))}
         </div>
-        {/* 커스텀 색상 입력 */}
-        <div className="flex items-center gap-2">
+        {/* 커스텀 색상 입력 - 데스크탑만 */}
+        <div className="hidden items-center gap-2 lg:flex">
           <input
             type="color"
             value={selectedText.fill}
