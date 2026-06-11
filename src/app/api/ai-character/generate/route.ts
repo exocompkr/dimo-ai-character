@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import sharp from "sharp";
+import { PNG } from "pngjs";
 import type { CharacterStyle } from "@/types/character-style";
 import characterStylesData from "@/data/character-styles.json";
 
@@ -112,20 +112,16 @@ async function fetchImageAsBuffer(url: string): Promise<Buffer> {
  * - 캐릭터 내부의 흰색은 보존됨
  */
 async function removeGreenBackground(imageBuffer: Buffer): Promise<Buffer> {
-  const image = sharp(imageBuffer);
-  const { width, height } = await image.metadata();
+  // pngjs: 순수 JS PNG 디코더/인코더. Vercel 서버리스 호환 (네이티브 바이너리 X).
+  const png = PNG.sync.read(imageBuffer);
+  const { width, height, data } = png;
 
   if (!width || !height) {
     throw new Error("Invalid image dimensions");
   }
 
-  // RGBA raw 데이터로 변환
-  const { data, info } = await image
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  const pixels = new Uint8ClampedArray(data);
+  // pngjs.PNG.data 는 RGBA 4채널 Buffer 로 디코드 (alpha 없으면 자동으로 255 추가)
+  const pixels = data;
 
   for (let i = 0; i < pixels.length; i += 4) {
     const r = pixels[i];
@@ -142,7 +138,6 @@ async function removeGreenBackground(imageBuffer: Buffer): Promise<Buffer> {
       pixels[i + 3] = 0;
     } else if (isSoftGreen) {
       // 녹색 경계 → 반투명 (부드러운 경계)
-      // 얼마나 녹색에 가까운지 계산 (G가 R,B보다 얼마나 높은지)
       const greenness = Math.min(
         (g - r) / 100,
         (g - b) / 100,
@@ -154,16 +149,8 @@ async function removeGreenBackground(imageBuffer: Buffer): Promise<Buffer> {
     }
   }
 
-  // 다시 PNG로 변환
-  return sharp(Buffer.from(pixels), {
-    raw: {
-      width: info.width,
-      height: info.height,
-      channels: 4,
-    },
-  })
-    .png()
-    .toBuffer();
+  // pixels 가 png.data 를 직접 참조하므로 그대로 인코딩하면 됨
+  return PNG.sync.write(png);
 }
 
 /**
